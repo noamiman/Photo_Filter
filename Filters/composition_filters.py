@@ -29,3 +29,4 @@ class RuleOfThirdsFilter(BaseFilter):
 
     def apply(self, frame):
         pass
+

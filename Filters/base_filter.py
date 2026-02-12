@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
+from typing import NamedTuple
 
 class Complexity(Enum):
     """
@@ -8,6 +9,15 @@ class Complexity(Enum):
     LOW = 1
     MEDIUM = 2
     HIGH = 3
+
+class Detection(NamedTuple):
+    """
+    define a generic class for xywh format
+    """
+    x: float
+    y: float
+    w: float
+    h: float
 
 class Instruction(Enum):
     """
@@ -57,15 +67,17 @@ class BaseFilter(ABC):
         detections = []
 
         # Extract person detections
+        # x: The X-coordinate of the center of the bounding box.
+        # y: The Y-coordinate of the center of the bounding box.
+        # w: The width of the bounding box.
+        # h: The height of the bounding box.
         if results and len(results[0].boxes) > 0:
             for box in results[0].boxes:
                 xywhn = box.xywhn[0].tolist()
 
-                class SimpleBox: pass
+                det = Detection(*xywhn)
+                detections.append(det)
 
-                b = SimpleBox()
-                b.x, b.y, b.w, b.h = xywhn
-                detections.append(b)
         return detections
 
     def __repr__(self):
