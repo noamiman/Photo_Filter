@@ -8,6 +8,12 @@ class CenteredFilter(BaseFilter):
         return "Centers the subject in the frame."
 
     def _calculate_feedback(self, frame, detections):
+        """
+        Analyzes detections to generate navigational instructions for the user.
+        :param frame: the current frame from the camera.
+        :param detections: a list of detected objects with normalized coordinates.
+        :return: string instructions for the user.
+        """
         if not detections:
             return Instruction.SEARCHING.value, False
 
