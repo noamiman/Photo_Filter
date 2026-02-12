@@ -1,8 +1,7 @@
 import cv2
 from ultralytics import YOLO
 import torch
-import os
-from datetime import datetime
+from utills import save_image
 
 
 class CameraEngine:
@@ -11,8 +10,6 @@ class CameraEngine:
         self.model = self._load_model(model_path)
         # initialize with no filter selected
         self.current_filter = None
-
-
 
     def _load_model(self, path):
         """
@@ -75,7 +72,7 @@ class CameraEngine:
             elif key == ord('w'):
                 # We only want to allow saving if the filter says we are ready
                 if is_ready:
-                    self._save_image(clean_frame)
+                    save_image(clean_frame)
                 else:
                     print("Not ready yet! Align the subject first.")
 
@@ -106,28 +103,6 @@ class CameraEngine:
             shoot_msg = "click on 'w' to take a picture"
             cv2.putText(frame, shoot_msg, (400, frame.shape[0] - 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-
-
-    def _save_image(self, frame):
-        # 1. Create a folder for photos if it doesn't exist
-        folder = "images"
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-
-        # 2. Generate a unique filename using the current time
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"photo_{timestamp}.jpg"
-        filepath = os.path.join(folder, filename)
-
-        # 3. Save the frame
-        # Note: Use a copy of the frame BEFORE drawing the text/rectangles
-        # if you want a clean photo!
-        success = cv2.imwrite(filepath, frame)
-
-        if success:
-            print(f"Photo saved successfully: {filepath}")
-        else:
-            print("Failed to save photo.")
 
 
 
