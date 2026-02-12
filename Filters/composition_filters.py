@@ -14,18 +14,26 @@ class CenteredFilter(BaseFilter):
         :param detections: a list of detected objects with normalized coordinates.
         :return: string instructions for the user.
         """
+        # No detections
         if not detections:
             return Instruction.SEARCHING.value, False
 
+        # save person detections.
         person = detections[0]
         x_center = person.x
 
+        # the limit of the check.
         tolerance = 0.05
+
+        # if the person is too left.
         if x_center < 0.5 - tolerance:
             return Instruction.MOVE_RIGHT.value, False
+
+        # if the person is too right.
         elif x_center > 0.5 + tolerance:
             return Instruction.MOVE_LEFT.value, False
 
+        # else we are ready.
         return Instruction.READY.value, True
 
 class RuleOfThirdsFilter(BaseFilter):
