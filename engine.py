@@ -89,20 +89,30 @@ class CameraEngine:
         """
         draws feedback text and visual cues on the frame
         """
+
         color = (0, 255, 0) if is_ready else (0, 255, 255)
 
-        # write the feedback text on the frame
-        cv2.putText(frame, feedback, (50, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+        if isinstance(feedback, str):
+            feedback_list = [feedback]
+        else:
+            feedback_list = feedback
+
+        start_y = 50
+        line_height = 40
+
+        for i, line in enumerate(feedback_list):
+            current_y = start_y + (i * line_height)
+            cv2.putText(frame, line, (50, current_y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+
         filter_description = self.current_filter.description
-        cv2.putText(frame, filter_description, (900, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
-        # draw a rectangle around the frame if ready
+        cv2.putText(frame, filter_description, (frame.shape[1] - 400, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2, cv2.LINE_AA)
+
         if is_ready:
             cv2.rectangle(frame, (0, 0), (frame.shape[1], frame.shape[0]), (0, 255, 0), 10)
-            shoot_msg = "click on 'w' to take a picture"
+            shoot_msg = "Press 'w' to take a picture"
             cv2.putText(frame, shoot_msg, (400, frame.shape[0] - 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-
 
 

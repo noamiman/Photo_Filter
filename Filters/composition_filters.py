@@ -44,32 +44,40 @@ class RuleOfThirdsFilter(BaseFilter):
 
     def _calculate_feedback(self, frame, detections):
         if not detections:
-            return Instruction.SEARCHING.value, False
+            return [Instruction.SEARCHING.value], False
 
+        curr_errors = []
         person = detections[0]
-        x_center = person.x
-        y_center = person.y
+        x_center, y_center, h = person.x, person.y, person.h
 
+        target_x_left, target_x_right, target_y_top = 1 / 3, 2 / 3, 1 / 3
         tolerance = 0.05
+        y_head = y_center - (h / 2)
 
-        left_third = 1/3
-        right_third = 2/3
+        is_at_left = abs(x_center - target_x_left) <= tolerance
+        is_at_right = abs(x_center - target_x_right) <= tolerance
 
-        is_at_left = abs(x_center-left_third) <= tolerance
-        is_at_right = abs(x_center-right_third) <= tolerance
-
-        if is_at_right or is_at_left:
-            return Instruction.READY.value, True
-
-        if x_center<left_third:
-            return Instruction.MOVE_RIGHT.value, False
-        elif x_center>right_third:
-            return Instruction.MOVE_LEFT.value, False
-        else:
-            if abs(x_center-left_third)<abs(x_center-right_third):
-                return Instruction.MOVE_LEFT.value, False
+        if not (is_at_left or is_at_right):
+            if x_center < target_x_left:
+                curr_errors.append(Instruction.MOVE_RIGHT.value)
+            elif x_center > target_x_right:
+                curr_errors.append(Instruction.MOVE_LEFT.value)
             else:
-                return Instruction.MOVE_RIGHT.value, False
+                if abs(x_center - target_x_left) < abs(x_center - target_x_right):
+                    curr_errors.append(Instruction.MOVE_LEFT.value)
+                else:
+                    curr_errors.append(Instruction.MOVE_RIGHT.value)
 
+        is_y_ready = abs(y_head - target_y_top) <= tolerance
+        if not is_y_ready:
+            if y_head < target_y_top:
+                curr_errors.append(Instruction.MOVE_DOWN.value)
+            else:
+                curr_errors.append(Instruction.MOVE_UP.value)
+
+        if not curr_errors:
+            return [Instruction.READY.value], True
+
+        return curr_errors, False
 
 
