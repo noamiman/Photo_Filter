@@ -1,7 +1,3 @@
-from unittest.mock import right
-
-from sympy import false
-
 from Filters.base_filter import BaseFilter
 from Filters.base_filter import Instruction
 
