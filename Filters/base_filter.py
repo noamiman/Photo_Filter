@@ -32,6 +32,7 @@ class Instruction(Enum):
     READY = "Ready! Shoot!"
     SEARCHING = "Searching for person..."
 
+
 class BaseFilter(ABC):
     """
     Base class for all filters.

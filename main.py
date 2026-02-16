@@ -1,5 +1,5 @@
 from engine import CameraEngine
-from Filters.composition_filters import CenteredFilter
+from Filters.composition_filters import *
 from Filters.base_filter import Complexity
 
 if __name__ == "__main__":
@@ -9,7 +9,11 @@ if __name__ == "__main__":
         name="MainCenterFilter",
         complexity=Complexity.LOW
     )
+    other = RuleOfThirdsFilter(
+        "RuleOfThirds",
+        Complexity.LOW
+    )
 
-    engine.set_filter(my_filter)
+    engine.set_filter(other)
 
     engine.run_live_camera()

@@ -95,7 +95,7 @@ class CameraEngine:
         cv2.putText(frame, feedback, (50, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
         filter_description = self.current_filter.description
-        cv2.putText(frame, filter_description, (1100, 50),
+        cv2.putText(frame, filter_description, (900, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
         # draw a rectangle around the frame if ready
         if is_ready:
