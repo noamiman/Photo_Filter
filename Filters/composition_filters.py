@@ -54,7 +54,7 @@ class RuleOfThirdsFilter(BaseFilter):
         x_center, y_center, h = person.x, person.y, person.h
 
         target_x_left, target_x_right, target_y_top = 1 / 3, 2 / 3, 1 / 3
-        tolerance = 0.05
+        tolerance = 0.1
         y_head = y_center - (h / 2)
 
         # check where is the subject
