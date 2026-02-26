@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import NamedTuple
+from typing import NamedTuple, List, Optional, Any
+import cv2
+
 
 class Complexity(Enum):
     """
@@ -18,6 +20,9 @@ class Detection(NamedTuple):
     y: float
     w: float
     h: float
+    confidence: float = 0.0
+    keypoints: Optional[list] = None
+
 
 class Instruction(Enum):
     """
@@ -43,6 +48,11 @@ class BaseFilter(ABC):
         self._model = model
 
     @property
+    def name(self):
+        """Returns the name of the filter"""
+        return self._name
+
+    @property
     @abstractmethod
     def description(self):
         """Returns a short description of the filter"""
@@ -57,29 +67,37 @@ class BaseFilter(ABC):
         return self._calculate_feedback(frame, detections)
 
     def _get_detections(self, frame):
-        """
-        Extracts detections from the frame using the YOLO model.
-        """
         if not self._model:
             return []
 
-        # check results from the frame, restrict to class 0 (person) with confidence threshold 0.5
-        results = self._model(frame, classes=[0], conf=0.5, verbose=False)
+        if hasattr(self._model, 'predict') or str(type(self._model)).lower().find('yolo') > -1:
+            results = self._model(frame, classes=[0], conf=0.5, verbose=False)
+            return self._process_yolo(results)
+
+        return []
+
+    @staticmethod
+    def _process_yolo(results):
+        """
+        YOLO-Pose (COCO) Keypoints (0-16):
+        ----------------------------------
+        0: Nose | 1-2: Eyes | 3-4: Ears
+        5-6: Shoulders | 7-8: Elbows | 9-10: Wrists
+        11-12: Hips | 13-14: Knees | 15-16: Ankles
+
+        Format: [[x, y, conf], ...] (Normalized 0.0-1.0)
+        """
         detections = []
+        res = results[0]
+        for i, box in enumerate(res.boxes):
+            if int(box.cls[0]) != 0: continue
 
-        # Extract person detections
-        # x: The X-coordinate of the center of the bounding box.
-        # y: The Y-coordinate of the center of the bounding box.
-        # w: The width of the bounding box.
-        # h: The height of the bounding box.
-        if results and len(results[0].boxes) > 0:
-            for box in results[0].boxes:
-                xywhn = box.xywhn[0].tolist()
+            xywhn = box.xywhn[0].tolist()
 
-                det = Detection(*xywhn)
-                detections.append(det)
-
+            kp = res.keypoints.xyn[i].tolist() if hasattr(res, 'keypoints') and res.keypoints is not None else None
+            detections.append(Detection(*xywhn, confidence=box.conf[0].item(), keypoints=kp))
         return detections
+
 
     def __repr__(self):
         attrs = ", ".join(f"{k.lstrip('_')}={v!r}" for k, v in self.__dict__.items())

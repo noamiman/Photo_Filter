@@ -105,8 +105,8 @@ class CameraEngine:
             cv2.putText(frame, line, (50, current_y),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
 
-        filter_description = self.current_filter.description
-        cv2.putText(frame, filter_description, (frame.shape[1] - 400, 50),
+        filter_name = self.current_filter.name
+        cv2.putText(frame, filter_name, (frame.shape[1] - 400, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2, cv2.LINE_AA)
 
         if is_ready:
