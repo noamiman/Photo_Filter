@@ -74,11 +74,6 @@ class BaseFilter(ABC):
             results = self._model(frame, classes=[0], conf=0.5, verbose=False)
             return self._process_yolo(results)
 
-        if hasattr(self._model, '__name__') and self._model.__name__ == 'process':
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = self._model(rgb_frame)
-            return self._process_mediapipe(results)
-
         return []
 
     @staticmethod
@@ -103,38 +98,6 @@ class BaseFilter(ABC):
             detections.append(Detection(*xywhn, confidence=box.conf[0].item(), keypoints=kp))
         return detections
 
-    @staticmethod
-    def _process_mediapipe(results):
-        if not results.pose_landmarks:
-            return []
-
-        detections = []
-
-        landmarks = results.pose_landmarks.landmark
-
-        x_coords = [lm.x for lm in landmarks]
-        y_coords = [lm.y for lm in landmarks]
-
-        x_min, x_max = min(x_coords), max(x_coords)
-        y_min, y_max = min(y_coords), max(y_coords)
-
-        w = x_max - x_min
-        h = y_max - y_min
-        center_x = x_min + (w / 2)
-        center_y = y_min + (h / 2)
-
-        kp_list = [[lm.x, lm.y, lm.visibility] for lm in landmarks]
-
-        det = Detection(
-            x=center_x,
-            y=center_y,
-            w=w,
-            h=h,
-            confidence=1.0,  # general value, no confidence score in mediapipe
-            keypoints=kp_list
-        )
-        detections.append(det)
-        return detections
 
     def __repr__(self):
         attrs = ", ".join(f"{k.lstrip('_')}={v!r}" for k, v in self.__dict__.items())
