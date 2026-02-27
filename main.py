@@ -1,11 +1,16 @@
 from engine import CameraEngine
 from Filters.composition_filters import *
+from Filters.advanced_filters import *
 from Filters.base_filter import Complexity
 from  Filters.technical_filters import HeadroomFilter
 
 if __name__ == "__main__":
     engine = CameraEngine(model_path="model/yolov8n-pose.pt")
 
+    my_filter = HeroShotFilter(
+        name="Hero Shot Pro",
+        complexity=Complexity.MEDIUM
+    )
     filters = [
         CenteredFilter(name="MainCenterFilter", complexity=Complexity.LOW),
         RuleOfThirdsFilter("RuleOfThirds", Complexity.LOW),
