@@ -36,6 +36,7 @@ class Instruction(Enum):
     STEP_BACK = "Step Back"
     READY = "Ready! Shoot!"
     SEARCHING = "Searching for person..."
+    FIND_SKY = "Adjust to show more sky in the background"
 
 
 class BaseFilter(ABC):
