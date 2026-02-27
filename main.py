@@ -17,6 +17,11 @@ if __name__ == "__main__":
         Complexity.LOW
     )
 
-    engine.set_filter(other)
+    look_room_filter = LookRoomFilter(model=engine.model)
+
+    #shuli
+    engine.set_filter(look_room_filter)
+
+    # engine.set_filter(other)
 
     engine.run_live_camera()

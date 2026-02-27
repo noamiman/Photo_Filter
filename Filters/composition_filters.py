@@ -1,5 +1,5 @@
-from Filters.base_filter import BaseFilter
-from Filters.base_filter import Instruction
+from Photo_Filter.Filters.base_filter import BaseFilter, Complexity
+from Photo_Filter.Filters.base_filter import Instruction
 
 
 class CenteredFilter(BaseFilter):
@@ -36,6 +36,7 @@ class CenteredFilter(BaseFilter):
 
         # else we are ready.
         return Instruction.READY.value, True
+
 
 class RuleOfThirdsFilter(BaseFilter):
     @property
@@ -87,4 +88,58 @@ class RuleOfThirdsFilter(BaseFilter):
         # there is errors, send to the render overlay function in the engine.
         return curr_errors, False
 
+
+class LookRoomFilter(BaseFilter):
+    def __init__(self, model=None):
+        super().__init__(name="Look Room Filter", complexity=Complexity.MEDIUM, model=model)
+
+    @property
+    def description(self):
+        return "Leaves empty space in the direction the subject is looking."
+
+    def _calculate_feedback(self, frame, detections):
+        if not detections:
+            return Instruction.SEARCHING.value, False
+
+        person = detections[0]
+        if not person.keypoints or len(person.keypoints) < 5:
+            return self._fallback_center(person.x)
+
+        nose_x = person.keypoints[0][0]
+        left_ear_x = person.keypoints[3][0]
+        right_ear_x = person.keypoints[4][0]
+
+        dist_to_left_ear = abs(nose_x - left_ear_x)
+        dist_to_right_ear = abs(nose_x - right_ear_x)
+
+        # make sure there won't be division by zero in the future calculations
+        dist_to_left_ear = max(dist_to_left_ear, 0.0001)
+        dist_to_right_ear = max(dist_to_right_ear, 0.0001)
+
+        # calculate the gaze ratio
+        target_x = 0.5
+        gaze_threshold = 1.5
+
+        # if the subject is looking significantly to the right, we want to leave more space on the right side
+        if dist_to_right_ear / dist_to_left_ear > gaze_threshold:
+            target_x = 1 / 3
+        if dist_to_left_ear / dist_to_right_ear > gaze_threshold:
+            target_x = 2 / 3
+        tolerance = 0.05
+
+        if person.x < target_x - tolerance:
+            return Instruction.MOVE_RIGHT.value, False
+        elif person.x > target_x + tolerance:
+            return Instruction.MOVE_LEFT.value, False
+
+        return Instruction.READY.value, True
+
+    @staticmethod
+    def _fallback_center(x_center):
+        tolerance = 0.05
+        if x_center < 0.5 - tolerance:
+            return Instruction.MOVE_RIGHT.value, False
+        elif x_center > 0.5 + tolerance:
+            return Instruction.MOVE_LEFT.value, False
+        return Instruction.READY.value, True
 
