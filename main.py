@@ -2,6 +2,7 @@ from engine import CameraEngine
 from Filters.composition_filters import *
 from Filters.advanced_filters import *
 from Filters.base_filter import Complexity
+from Filters.template_filter import UniversalTemplateFilter # ייבוא מהקובץ החדש שלך
 from Filters.technical_filters import HeadroomFilter
 
 if __name__ == "__main__":
@@ -14,6 +15,11 @@ if __name__ == "__main__":
         LookRoomFilter(model=engine.model),
         HeroShotFilter(name="HeroShotPro",complexity=Complexity.MEDIUM)
     ]
+    my_template = UniversalTemplateFilter(
+        name="MyUniversalFilter",
+        model=engine.model,
+        template_image_path="template.jpg"
+    )
 
     def display_filters():
         print("Available Filters:")
