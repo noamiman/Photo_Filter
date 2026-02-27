@@ -21,6 +21,12 @@ if __name__ == "__main__":
         Complexity.MEDIUM
     )
 
+    look_room_filter = LookRoomFilter(model=engine.model)
     engine.set_filter(sky)
+
+    #shuli
+    engine.set_filter(look_room_filter)
+
+    # engine.set_filter(other)
 
     engine.run_live_camera()
