@@ -1,7 +1,7 @@
 from engine import CameraEngine
 from Filters.composition_filters import *
 from Filters.base_filter import Complexity
-
+from  Filters.technical_filters import HeadroomFilter
 
 if __name__ == "__main__":
 
@@ -16,7 +16,11 @@ if __name__ == "__main__":
         "RuleOfThirds",
         Complexity.LOW
     )
+    sky = HeadroomFilter(
+        "Headroom",
+        Complexity.MEDIUM
+    )
 
-    engine.set_filter(other)
+    engine.set_filter(sky)
 
     engine.run_live_camera()

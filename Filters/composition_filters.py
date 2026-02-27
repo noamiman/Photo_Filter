@@ -21,7 +21,6 @@ class CenteredFilter(BaseFilter):
         # save person detections.
         person = detections[0]
         x_center = person.x
-
         # the limit of the check.
         tolerance = 0.05
         center = 0.5
