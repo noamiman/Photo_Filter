@@ -38,6 +38,7 @@ class CameraEngine:
 
     def run_live_camera(self):
         # live camera feed using OpenCV
+        cap = cv2.VideoCapture(0)
 
         cap = cv2.VideoCapture(0)
 
