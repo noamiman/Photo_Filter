@@ -2,6 +2,7 @@ from Filters.base_filter import BaseFilter, Instruction
 import cv2
 import numpy as np
 
+
 class HeadroomFilter(BaseFilter):
     def __init__(self, name, complexity, model=None, traget_sky_ratio=0.3):
         super().__init__(name, complexity, model)
@@ -93,6 +94,7 @@ class HeadroomFilter(BaseFilter):
             return Instruction.MOVE_UP.value, False
 
         return Instruction.READY.value, True
+
 
 class DistanceFilter(BaseFilter):
     @property

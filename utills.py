@@ -2,6 +2,7 @@ import os
 import cv2
 from datetime import datetime
 
+
 def save_image(frame, folder="images"):
     """
     Saves an image frame to a specified folder with a timestamped filename.

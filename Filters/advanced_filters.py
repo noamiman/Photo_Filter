@@ -1,6 +1,7 @@
 from Filters.base_filter import BaseFilter
 from Filters.base_filter import Instruction
 
+
 class HorizonLevelerFilter(BaseFilter):
     @property
     def description(self):
@@ -8,6 +9,7 @@ class HorizonLevelerFilter(BaseFilter):
 
     def apply(self, frame):
         pass
+
 
 class SymmetryFilter(BaseFilter):
     @property

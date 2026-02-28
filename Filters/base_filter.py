@@ -12,6 +12,7 @@ class Complexity(Enum):
     MEDIUM = 2
     HIGH = 3
 
+
 class Detection(NamedTuple):
     """
     define a generic class for xywh format
@@ -86,7 +87,8 @@ class BaseFilter(ABC):
             return [Instruction.MOVE_RIGHT.value if detection.x < left_third else Instruction.MOVE_LEFT.value]
         return [Instruction.MOVE_RIGHT.value if detection.x < right_third else Instruction.MOVE_LEFT.value]
 
-    def sky_is_horizontal_third(self, detection: Detection, tolerance=0.05):
+    @staticmethod
+    def sky_is_horizontal_third(detection: Detection, tolerance=0.05):
         """Aligns the subject's head with the top horizontal third to leave room for the 'sky'."""
         y_top = detection.y - (detection.h / 2)
         target = 1 / 3
@@ -94,14 +96,16 @@ class BaseFilter(ABC):
             return [Instruction.MOVE_DOWN.value if y_top > target else Instruction.MOVE_UP.value]
         return []
 
-    def subject_feet_at_bottom(self, detection: Detection, tolerance=0.05):
+    @staticmethod
+    def subject_feet_at_bottom(detection: Detection, tolerance=0.05):
         """Ensures the bottom of the bounding box is anchored to the bottom edge."""
         y_bottom = detection.y + (detection.h / 2)
         if y_bottom < (1.0 - tolerance):
             return [Instruction.MOVE_DOWN.value]
         return []
 
-    def get_combined_detection(self, detections: List[Detection]) -> Optional[Detection]:
+    @staticmethod
+    def get_combined_detection(detections: List[Detection]) -> Optional[Detection]:
         """Tool to merge a couple/group into one detection for shared framing rules."""
         if not detections: return None
         if len(detections) == 1: return detections[0]
@@ -145,7 +149,6 @@ class BaseFilter(ABC):
             kp = res.keypoints.xyn[i].tolist() if hasattr(res, 'keypoints') and res.keypoints is not None else None
             detections.append(Detection(*xywhn, confidence=box.conf[0].item(), keypoints=kp))
         return detections
-
 
     def __repr__(self):
         attrs = ", ".join(f"{k.lstrip('_')}={v!r}" for k, v in self.__dict__.items())
