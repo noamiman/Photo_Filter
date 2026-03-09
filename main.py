@@ -12,7 +12,7 @@ if __name__ == "__main__":
         RuleOfThirdsFilter("RuleOfThirds", Complexity.LOW),
         HeadroomFilter("Headroom", Complexity.MEDIUM),
         LookRoomFilter(model=engine.model),
-        HeroShotFilter(name="Hero Shot Pro",complexity=Complexity.MEDIUM)
+        HeroShotFilter(name="HeroShotPro",complexity=Complexity.MEDIUM)
     ]
 
     def display_filters():

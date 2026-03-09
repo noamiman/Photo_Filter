@@ -90,7 +90,7 @@ class RuleOfThirdsFilter(BaseFilter):
 
 class LookRoomFilter(BaseFilter):
     def __init__(self, model=None):
-        super().__init__(name="Look Room Filter", complexity=Complexity.MEDIUM, model=model)
+        super().__init__(name="LookRoomFilter", complexity=Complexity.MEDIUM, model=model)
 
     @property
     def description(self):
