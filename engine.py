@@ -38,6 +38,7 @@ class CameraEngine:
 
     def run_live_camera(self):
         # live camera feed using OpenCV
+
         cap = cv2.VideoCapture(0)
 
         if not cap.isOpened():
@@ -68,11 +69,12 @@ class CameraEngine:
             # exit on 'q' key press
             if key & 0xFF == ord('q'):
                 break
+
             # Save the picture
             elif key == ord('w'):
                 # We only want to allow saving if the filter says we are ready
                 if is_ready:
-                    save_image(clean_frame)
+                    save_image(clean_frame, filter_name=self.current_filter.name)
                 else:
                     print("Not ready yet! Align the subject first.")
 

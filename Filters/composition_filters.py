@@ -1,5 +1,5 @@
-from Photo_Filter.Filters.base_filter import BaseFilter, Complexity
-from Photo_Filter.Filters.base_filter import Instruction
+from Filters.base_filter import BaseFilter, Complexity
+from Filters.base_filter import Instruction
 
 
 class CenteredFilter(BaseFilter):
@@ -90,7 +90,7 @@ class RuleOfThirdsFilter(BaseFilter):
 
 class LookRoomFilter(BaseFilter):
     def __init__(self, model=None):
-        super().__init__(name="Look Room Filter", complexity=Complexity.MEDIUM, model=model)
+        super().__init__(name="LookRoomFilter", complexity=Complexity.MEDIUM, model=model)
 
     @property
     def description(self):
@@ -141,4 +141,3 @@ class LookRoomFilter(BaseFilter):
         elif x_center > 0.5 + tolerance:
             return Instruction.MOVE_LEFT.value, False
         return Instruction.READY.value, True
-

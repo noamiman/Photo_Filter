@@ -12,6 +12,7 @@ class Complexity(Enum):
     MEDIUM = 2
     HIGH = 3
 
+
 class Detection(NamedTuple):
     """
     define a generic class for xywh format
@@ -67,6 +68,56 @@ class BaseFilter(ABC):
         detections = self._get_detections(frame)
         return self._calculate_feedback(frame, detections)
 
+    def subject_centered(self, detection: Detection, tolerance=0.05):
+        """Checks if the subject is centered by the vertical axis"""
+        if detection.x < 0.5 - tolerance:
+            return [Instruction.MOVE_RIGHT.value]
+        if detection.x > 0.5 + tolerance:
+            return [Instruction.MOVE_LEFT.value]
+        return []
+
+    def subject_on_third(self, detection: Detection, tolerance=0.05):
+        """Checks if the subject is on one of the vertical third lines (0.33 or 0.66)."""
+        left_third, right_third = 1 / 3, 2 / 3
+        if abs(detection.x - left_third) <= tolerance or abs(detection.x - right_third) <= tolerance:
+            return []
+
+        # Guide to the closest third line
+        if abs(detection.x - left_third) < abs(detection.x - right_third):
+            return [Instruction.MOVE_RIGHT.value if detection.x < left_third else Instruction.MOVE_LEFT.value]
+        return [Instruction.MOVE_RIGHT.value if detection.x < right_third else Instruction.MOVE_LEFT.value]
+
+    @staticmethod
+    def sky_is_horizontal_third(detection: Detection, tolerance=0.05):
+        """Aligns the subject's head with the top horizontal third to leave room for the 'sky'."""
+        y_top = detection.y - (detection.h / 2)
+        target = 1 / 3
+        if abs(y_top - target) > tolerance:
+            return [Instruction.MOVE_DOWN.value if y_top > target else Instruction.MOVE_UP.value]
+        return []
+
+    @staticmethod
+    def subject_feet_at_bottom(detection: Detection, tolerance=0.05):
+        """Ensures the bottom of the bounding box is anchored to the bottom edge."""
+        y_bottom = detection.y + (detection.h / 2)
+        if y_bottom < (1.0 - tolerance):
+            return [Instruction.MOVE_DOWN.value]
+        return []
+
+    @staticmethod
+    def get_combined_detection(detections: List[Detection]) -> Optional[Detection]:
+        """Tool to merge a couple/group into one detection for shared framing rules."""
+        if not detections: return None
+        if len(detections) == 1: return detections[0]
+
+        x_left = min(d.x - d.w / 2 for d in detections)
+        x_right = max(d.x + d.w / 2 for d in detections)
+        y_top = min(d.y - d.h / 2 for d in detections)
+        y_bottom = max(d.y + d.h / 2 for d in detections)
+
+        w, h = x_right - x_left, y_bottom - y_top
+        return Detection(x=x_left + w / 2, y=y_top + h / 2, w=w, h=h)
+
     def _get_detections(self, frame):
         if not self._model:
             return []
@@ -98,7 +149,6 @@ class BaseFilter(ABC):
             kp = res.keypoints.xyn[i].tolist() if hasattr(res, 'keypoints') and res.keypoints is not None else None
             detections.append(Detection(*xywhn, confidence=box.conf[0].item(), keypoints=kp))
         return detections
-
 
     def __repr__(self):
         attrs = ", ".join(f"{k.lstrip('_')}={v!r}" for k, v in self.__dict__.items())

@@ -2,6 +2,7 @@ from Filters.base_filter import BaseFilter, Instruction
 import cv2
 import numpy as np
 
+
 class HeadroomFilter(BaseFilter):
     def __init__(self, name, complexity, model=None, traget_sky_ratio=0.3):
         super().__init__(name, complexity, model)
@@ -66,10 +67,14 @@ class HeadroomFilter(BaseFilter):
             return white_ratio * 0.5
 
     def _calculate_feedback(self, frame, detections):
+        # no person detected
         if not detections:
             return Instruction.SEARCHING.value, False
-
+        # get the first person detected
         person = detections[0]
+
+        # get top_y for sky check.
+        # nose is index 0 in keypoints (yolo-pose)
         if person.keypoints and len(person.keypoints) > 0:
             top_y = person.keypoints[0][1]
         else:
@@ -77,9 +82,11 @@ class HeadroomFilter(BaseFilter):
 
         sky_confidence = self._check_sky_color(frame, top_y)
 
+        # if we are not seeing enough sky, we should ask the user to adjust to see more sky.
         if sky_confidence < 0.3:
             return Instruction.FIND_SKY.value, False
 
+        # check composition based on the position of the head (top_y) and the target sky ratio.
         if top_y < self.target_sky_ratio - self.margin:
             return Instruction.MOVE_DOWN.value, False
 
@@ -87,6 +94,7 @@ class HeadroomFilter(BaseFilter):
             return Instruction.MOVE_UP.value, False
 
         return Instruction.READY.value, True
+
 
 class DistanceFilter(BaseFilter):
     @property
