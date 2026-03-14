@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import NamedTuple, List, Optional, Any
+import math
 import cv2
 
 
@@ -35,6 +36,14 @@ class Instruction(Enum):
     MOVE_DOWN = "Tilt Down"
     COME_CLOSER = "Move Closer"
     STEP_BACK = "Step Back"
+    LEVEL_SHOULDERS = "Level Your Shoulders"
+    CHIN_UP = "Raise Your Chin"
+    CHIN_DOWN = "Lower Your Chin"
+    TILT_HEAD_RIGHT = "Tilt Your Head Right"
+    TILT_HEAD_LEFT = "Tilt Your Head Left"
+    TURN_HEAD_RIGHT = "Turn Your Head Right"
+    TURN_HEAD_LEFT = "Turn Your Head Left"
+    STAND_STRAIGHT = "Stand Up Straight"
     READY = "Ready! Shoot!"
     SEARCHING = "Searching for person..."
     FIND_SKY = "Adjust to show more sky in the background"
@@ -104,8 +113,99 @@ class BaseFilter(ABC):
             return [Instruction.MOVE_DOWN.value]
         return []
 
-    @staticmethod
-    def get_combined_detection(detections: List[Detection]) -> Optional[Detection]:
+    def check_sloped_shoulders(self, detection, tolerance=0.08) -> List[str]:
+        """Checks if the subject's shoulders are aligned horizontally."""
+        # check if keypoints are detected
+        if not detection.keypoints or len(detection.keypoints) < 7:
+            return []
+
+        l_shoulder, r_shoulder = detection.keypoints[5], detection.keypoints[6]
+
+        # find the shoulder width and the vertical height difference between them
+        y_diff = abs(l_shoulder[1] - r_shoulder[1])
+        shoulder_width = abs(r_shoulder[0] - l_shoulder[0]) + 0.001  # +0.001 prevents division by zero
+
+        # if the height difference is more than 8% of the shoulder width
+        if (y_diff / shoulder_width) > tolerance:
+            return [Instruction.LEVEL_SHOULDERS.value]
+
+        return []
+
+    def check_head_tilt(self, detection, max_angle_deg=8, neutral_zone=2) -> List[str]:
+        """check head tilt to the side (confused dog)."""
+        # check if keypoints are detected
+        if not detection.keypoints or len(detection.keypoints) < 3:
+            return []
+
+        l_eye = detection.keypoints[1]
+        r_eye = detection.keypoints[2]
+
+        eye_dx = abs(r_eye[0] - l_eye[0])
+        eye_dy = r_eye[1] - l_eye[1]
+        if abs(eye_dx) < 1e-5:
+            return []
+
+        angle = math.degrees(math.atan2(eye_dy, eye_dx))
+
+        # neutral band around straight head to avoid the instructions "flipping"
+        if abs(angle) <= neutral_zone:
+            return []
+        if angle > max_angle_deg:
+            return [Instruction.TILT_HEAD_LEFT.value]
+        if angle < -max_angle_deg:
+            return [Instruction.TILT_HEAD_RIGHT.value]
+
+        return []
+
+    def check_head_turn(self, detection, turn_tolerance=0.2) -> List[str]:
+        """check if the head is turned do a certain direction"""
+        # check if keypoints are detected
+        if not detection.keypoints or len(detection.keypoints) < 7:
+            return []
+
+        nose = detection.keypoints[0]
+        l_eye,r_eye = detection.keypoints[1], detection.keypoints[2]
+
+        # calculate horizontal distance from nose to each eye, the distance between them and the difference
+        l_eye_dist = abs(nose[0] - l_eye[0])
+        r_eye_dist = abs(r_eye[0] - nose[0])
+        eye_width = abs(r_eye[0] - l_eye[0]) + 0.001
+        asymmetry = abs(l_eye_dist - r_eye_dist)
+
+        # check the ratio relative to the tolerance
+        if (asymmetry / eye_width) > turn_tolerance:
+            if l_eye_dist > r_eye_dist:
+                return [Instruction.TURN_HEAD_LEFT.value]
+            else:
+                return [Instruction.TURN_HEAD_RIGHT.value]
+
+        return []
+
+    def check_multi_angle_slouch(self, detection, hunch_tolerance=1.5) -> List[str]:
+        """check for a forward slouch by comparing the neck length to the vertical size of the face."""
+        # check if keypoints are detected
+        if not detection.keypoints or len(detection.keypoints) < 7:
+            return []
+
+        nose = detection.keypoints[0]
+        l_eye, r_eye = detection.keypoints[1], detection.keypoints[2]
+        mid_eye_y = (l_eye[1] + r_eye[1]) / 2.0
+        l_shoulder, r_shoulder = detection.keypoints[5], detection.keypoints[6]
+        reference_shoulder_y = (l_shoulder[1] + r_shoulder[1]) / 2.0
+
+        # calculate "face scale": vertical distance from the eye down to the nose
+        face_scale = abs(nose[1] - mid_eye_y)
+        if face_scale < 0.001: # prevent division by zero if the face is tiny/glitched
+            return []
+        neck_length = reference_shoulder_y - nose[1] # calculate the neck length
+
+        # check the ratio relative to the tolerance
+        if (neck_length / face_scale) < hunch_tolerance:
+            return [Instruction.STAND_STRAIGHT.value]
+
+        return []
+
+    def get_combined_detection(self, detections: List[Detection]) -> Optional[Detection]:
         """Tool to merge a couple/group into one detection for shared framing rules."""
         if not detections: return None
         if len(detections) == 1: return detections[0]
