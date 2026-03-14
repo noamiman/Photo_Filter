@@ -136,11 +136,15 @@ class FilterSelectorGUI:
 
     def finish_selection(self, filter_obj):
         self.selected_filter = filter_obj
-        self.root.destroy()
+        self.root.after(200, self.root.destroy)
 
     def run(self):
-        self.root.mainloop()
-        return self.selected_filter
+        try:
+            self.root.mainloop()
+        except Exception:
+            pass
+        finally:
+            return self.selected_filter
 
 
 if __name__ == "__main__":
