@@ -12,6 +12,11 @@ class UniversalTemplateFilter(BaseFilter):
         (0, 1), (0, 2), (1, 3), (2, 4), (5, 6), (5, 7), (7, 9), (6, 8), (8, 10),
         (5, 11), (6, 12), (11, 12), (11, 13), (13, 15), (12, 14), (14, 16)
     ]
+    BODY_EDGES = [
+        (5, 6), (5, 7), (7, 9), (6, 8), (8, 10),  # ידיים וכתפיים
+        (5, 11), (6, 12), (11, 12),  # טורסו (גוף מרכזי)
+        (11, 13), (13, 15), (12, 14), (14, 16)  # רגליים
+    ]
 
     def __init__(self, name, model, template_image_path=None):
         super().__init__(name, Complexity.HIGH, model)
@@ -106,46 +111,66 @@ class UniversalTemplateFilter(BaseFilter):
         return feedback, is_ready
 
     def _draw_fixed_stencil(self, frame, is_ready):
-        """מצייר שבלונה קשיחה ומסיבית על הפריים"""
         if not self.target_keypoints: return
         h, w, _ = frame.shape
 
-        # צבעים: ירוק זוהר כשיש התאמה, לבן חצי שקוף כשמחפשים
-        color = (0, 255, 0) if is_ready else (255, 255, 255)
-        overlay = frame.copy()
+        # צבעים: ירוק זוהר כשיש התאמה, לבן נקי כשמחפשים
+        main_color = (0, 255, 0) if is_ready else (255, 255, 255)
 
-        # 1. ציור השלד על שכבת ה-Overlay (ליצירת אפקט חצי שקוף)
-        for edge in self.EDGES:
-            p1_idx, p2_idx = edge
-            kp1, kp2 = self.target_keypoints[p1_idx], self.target_keypoints[p2_idx]
-            if kp1[0] > 0 and kp2[0] > 0:
-                pt1 = (int(kp1[0] * w), int(kp1[1] * h))
-                pt2 = (int(kp2[0] * w), int(kp2[1] * h))
-                # מצייר קו עבה "שבלוני"
-                cv2.line(overlay, pt1, pt2, color, 8, cv2.LINE_AA)
+        # יצירת שכבת Overlay שחורה לגמרי - עליה נצייר את הנפח השקוף
+        overlay = np.zeros_like(frame)
 
-        # 2. ציור המפרקים
-        for kp in self.target_keypoints:
-            if kp[0] > 0:
-                cv2.circle(overlay, (int(kp[0] * w), int(kp[1] * h)), 10, color, -1)
+        # פונקציית עזר להמרת נקודות מנורמלות לפיקסלים
+        def get_pt(idx):
+            kp = self.target_keypoints[idx]
+            return (int(kp[0] * w), int(kp[1] * h))
 
-        # 3. מיזוג השכבות (נותן אפקט של שבלונה על המסך)
-        alpha = 0.4
+        # --- 1. ציור הנפח המלא על ה-Overlay (לשקיפות) ---
+        # ראש
+        head_center = get_pt(0)
+        head_radius = int(h * 0.06)
+        cv2.circle(overlay, head_center, head_radius, main_color, -1)  # עיגול מלא
+
+        # טורסו (גוף מרכזי)
+        torso_pts = np.array([get_pt(5), get_pt(6), get_pt(12), get_pt(11)], np.int32)
+        cv2.fillPoly(overlay, [torso_pts], main_color)  # פוליגון מלא
+
+        # גפיים (ידיים ורגליים) - נצייר אותן כקווים עבים מאוד כדי לתת נפח
+        limb_thickness = int(w * 0.03)  # עובי מסיבי (למשל 20 פיקסלים ב-HD)
+        for edge in self.BODY_EDGES:
+            p1, p2 = get_pt(edge[0]), get_pt(edge[1])
+            cv2.line(overlay, p1, p2, main_color, limb_thickness, cv2.LINE_AA)
+
+        # --- 2. מיזוג השכבות (יצירת אפקט השקיפות החדה) ---
+        alpha = 0.25  # רמת שקיפות נמוכה (25% צבע, 75% רקע) - זה נותן את מראה הזכוכית
         cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
 
-        # 4. ציור קווי מתאר חדים מעל להדגשה
-        for edge in self.EDGES:
-            p1_idx, p2_idx = edge
-            kp1, kp2 = self.target_keypoints[p1_idx], self.target_keypoints[p2_idx]
-            if kp1[0] > 0 and kp2[0] > 0:
-                pt1 = (int(kp1[0] * w), int(kp1[1] * h))
-                pt2 = (int(kp2[0] * w), int(kp2[1] * h))
-                cv2.line(frame, pt1, pt2, color, 2, cv2.LINE_AA)
+        # --- 3. הוספת קו מתאר (Outline) דק לחדות ---
+        # זה הופך את הצללית לחדה ואלגנטית מעל הנפח השקוף
+        outline_thick = int(w * 0.005)  # עובי דק
+        if outline_thick < 1: outline_thick = 1
+
+        cv2.circle(frame, head_center, head_radius, main_color, outline_thick, cv2.LINE_AA)
+
+        # טורסו כשרטוט
+        p5, p6, p11, p12 = get_pt(5), get_pt(6), get_pt(11), get_pt(12)
+        cv2.line(frame, p5, p6, main_color, outline_thick, cv2.LINE_AA)
+        cv2.line(frame, p6, p12, main_color, outline_thick, cv2.LINE_AA)
+        cv2.line(frame, p12, p11, main_color, outline_thick, cv2.LINE_AA)
+        cv2.line(frame, p11, p5, main_color, outline_thick, cv2.LINE_AA)
+
+        # גפיים כשרטוט
+        for edge in self.BODY_EDGES:
+            if edge in [(5, 6), (5, 11), (6, 12), (11, 12)]: continue
+            p1, p2 = get_pt(edge[0]), get_pt(edge[1])
+            cv2.line(frame, p1, p2, main_color, outline_thick, cv2.LINE_AA)
+
 
     def _pick_file_ui(self):
         root = tk.Tk()
         root.withdraw()
         root.attributes('-topmost', True)
         path = filedialog.askopenfilename(filetypes=[("Image", "*.jpg *.png *.jpeg")])
-        root.destroy()
+        root.update()
+        root.after(200, root.destroy)
         return path

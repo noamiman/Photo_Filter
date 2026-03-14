@@ -38,7 +38,7 @@ class CameraEngine:
 
     def run_live_camera(self):
         # live camera feed using OpenCV
-        cap = cv2.VideoCapture(1)
+        cap = cv2.VideoCapture(0)
 
         if not cap.isOpened():
             print("Error: Could not open camera.")
