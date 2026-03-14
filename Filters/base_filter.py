@@ -22,6 +22,7 @@ class Detection(NamedTuple):
     w: float
     h: float
     confidence: float = 0.0
+    label: str=""
     keypoints: Optional[list] = None
 
 
@@ -122,32 +123,31 @@ class BaseFilter(ABC):
         if not self._model:
             return []
 
-        if hasattr(self._model, 'predict') or str(type(self._model)).lower().find('yolo') > -1:
-            results = self._model(frame, classes=[0], conf=0.5, verbose=False)
+        if hasattr(self._model, 'predict') or "yolo" in str(type(self._model)).lower():
+            results = self._model(frame, conf=0.5, verbose=False)
             return self._process_yolo(results)
 
         return []
 
     @staticmethod
     def _process_yolo(results):
-        """
-        YOLO-Pose (COCO) Keypoints (0-16):
-        ----------------------------------
-        0: Nose | 1-2: Eyes | 3-4: Ears
-        5-6: Shoulders | 7-8: Elbows | 9-10: Wrists
-        11-12: Hips | 13-14: Knees | 15-16: Ankles
-
-        Format: [[x, y, conf], ...] (Normalized 0.0-1.0)
-        """
         detections = []
         res = results[0]
-        for i, box in enumerate(res.boxes):
-            if int(box.cls[0]) != 0: continue
+        names = res.names
 
+        for i, box in enumerate(res.boxes):
             xywhn = box.xywhn[0].tolist()
+            cls_id = int(box.cls[0])
+            label = names.get(cls_id, "unknown")
 
             kp = res.keypoints.xyn[i].tolist() if hasattr(res, 'keypoints') and res.keypoints is not None else None
-            detections.append(Detection(*xywhn, confidence=box.conf[0].item(), keypoints=kp))
+
+            detections.append(Detection(
+                *xywhn,
+                confidence=box.conf[0].item(),
+                label=label,
+                keypoints=kp
+            ))
         return detections
 
     def __repr__(self):
